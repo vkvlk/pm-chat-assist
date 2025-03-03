@@ -58,4 +58,43 @@ class DateUtils:
             current_date += timedelta(days=1)
             
         return impacted_dates
+    
+    def get_holidays_list_by_range(self, start_year: int, end_year: int) -> str:
+        """Generate a list of US federal holidays for the specified years"""
+        holiday_list = []
+        for year in range(start_year, end_year + 1):
+            # Get the holiday dict for the specific year
+            year_holidays = holidays.US(years=year)
+            # Extract only the date:name pairs and sort by date
+            holiday_pairs = {date: name for date, name in year_holidays.items()}
+            sorted_holidays = sorted(holiday_pairs.items())
+            
+            # Format the holidays for the year
+            year_holidays_formatted = []
+            for date, name in sorted_holidays:
+                year_holidays_formatted.append(f"{date.strftime('%Y-%m-%d')}: {name}")
+            
+            holiday_list.append(f"US Federal Holidays {year}:\n" + "\n".join(year_holidays_formatted))
+        
+        return "\n\n".join(holiday_list)
+    
+
+def load_and_format_data() -> str:
+    dt = DateUtils()
+    # Load project schedule data
+    df = pd.read_excel(settings.data_file_path)
+
+    # Add metadata header
+    data_context = f"""
+    ## Project Schedule Data Context
+    - Date Format: YYYY-MM-DD
+    - Current Date: {datetime.today().strftime('%Y-%m-%d')}
+    - Federal Holidays: {dt.get_holidays_list_by_range(settings.default_years[0], settings.default_years[-1])}
+    - Weekend Definition: Saturday/Sunday
+    - Task Relationships: FS=Finish-to-Start, SS=Start-to-Start, 4FS+43= Task 4 Finish-to-Start with offset +43 days
+    """
+
+    # Convert to LLM-friendly format
+    formatted_data = data_context + "\n\n## Task List\n" + df.to_markdown()
+    return formatted_data
 

@@ -4,49 +4,106 @@ import instructor
 from pydantic import BaseModel, Field
 from openai import OpenAI
 from config import settings
-from typing import List
-#from enum import Enum
-import httpx
+from typing import List, Literal, Optional, Dict
+from models import TaskAnalysisRequest
+from dataset import load_and_format_data
+from enum import Enum
+
+
 # some sample questions to classify
 questions = settings.typical_questions
-
-
-
-
+data = load_and_format_data()
 
 client = OpenAI(base_url=settings.base_url,
                 api_key=settings.openrouter_api_key)
-"""
-client = OpenAI(
-  base_url="https://openrouter.ai/api/v1",
-  api_key="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",
-)
-"""
-completion = client.chat.completions.create(
-  
-  model="google/gemini-2.0-flash-exp:free",
-  messages=[
-    {
-      "role": "user",
-      "content": "Which tasks start on holiday?"    
-    }
-  ]
-)
-print(completion.choices[0].message.content)
+
+# client = instructor.patch(client, mode='functions') #instructor model response functional added to client
+
+
+class QueryType(str, Enum):
+    HOLIDAY_IMPACT = "holiday_impact"
+    WEEKEND_IMPACT = "weekend_impact"
+    GENERAL_QUERY = "general_query"
+
+class QueryClassification(BaseModel):
+    query_type: QueryType
+    confidence: float = Field(ge=0, le=1, description="Confidence score for the classification")
+    key_information: List[str] = Field(description="List of key points extracted from the question")
+    suggested_action: str = Field(description="Brief recommendation based on the query classification")
+
+
+
+class LLMResponse(BaseModel):
+    """Model for structured LLM responses"""
+    response_type: Literal["task_analysis", "schedule_impact", "general_query"]
+    content: str
+    confidence: float = Field(ge=0.0, le=1.0)
+    relevant_tasks: Optional[List[str]] = Field(default_factory=list)
+    date_range: Optional[Dict[str, str]] = None  # Changed datetime to str for compatibility
+
+def classify_question(question_text: str) -> LLMResponse:
+    try:    
+        patched_client = instructor.patch(client, mode=instructor.Mode.MD_JSON)
+        # Get structured response using Instructor
+        response = patched_client.chat.completions.create(
+            model=settings.default_model,
+            temperature=settings.temperature,
+            # max_tokens=settings.max_tokens,
+            max_retries=3,
+            response_model=LLMResponse,
+            messages=[
+                {"role": "system", "content": settings.SYSTEM_PROMPT + data},
+                {"role": "user", "content": question_text}
+            ]
+        )
+        
+        # With instructor, response is already the LLMResponse object
+        # Format the response for display
+        formatted_response = response.content
+        if response.relevant_tasks:
+            formatted_response += "\n\nRelevant Tasks:\n" + "\n".join(response.relevant_tasks)
+        if response.date_range:
+            formatted_response += f"\n\nDate Range: {response.date_range['start']} to {response.date_range['end']}"
+        
+        return formatted_response
+        
+    except Exception as e:
+        return f"An error occurred: {e}"
+
+print(classify_question(questions[0]))
+print(classify_question(questions[1]))
+print(classify_question(questions[2]))
 
 """
-client = instructor.patch(client)
 
 def classify_question(question_text: str) -> str:
-    response = client.chat.completions.create(
-        model=settings.default_model,
-        messages=[
-            {"role": "system", "content": "Classify the following project manager question into a category."},
-            {"role": "user", "content": question_text}
-        ]
-    )
-    return response.choices[0].message.content
+    try:
+        response = client.chat.completions.create(
+            model=settings.default_model,
+            temperature=settings.temperature,
+            # max_tokens=settings.max_tokens,
+            max_retries=3,
+            response_model=LLMResponse,
+            messages=[
+                {"role": "system", "content": load_and_format_data()},
+                {"role": "system", "content": settings.SYSTEM_PROMPT},
+                {"role": "user", "content": question_text}
+            ]
+        )
+        if response and response.choices:
+            return response.choices[0].message.content
+        else:
+            return "No valid response received from the API."
+    except Exception as e:
+        return f"An error occurred: {e}"
 
-result = classify_question(questions[0])
-print(result)
+print(classify_question(questions[0]))
+"""
+"""
+result0 = classify_question(questions[0])
+result1 = classify_question(questions[1])
+result2 = classify_question(questions[2])
+print(result0.model_dump_json(indent=2))
+print(result1.model_dump_json(indent=2))
+print(result2.model_dump_json(indent=2))
 """
