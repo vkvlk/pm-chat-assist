@@ -2,8 +2,7 @@ import streamlit as st
 import pandas as pd
 from config import settings
 from dataset import load_and_format_data
-
-from llm import llm_query, LLMResponse
+from llm import llm_query
 
 
 # Streamlit UI
@@ -19,9 +18,7 @@ api_key = st.sidebar.text_input("Enter API Key:",
                                type="password")
 st.sidebar.markdown("API key from [OpenRouter](https://openrouter.ai/)")
 
-
-model = st.sidebar.selectbox(
-    "Select Model:",
+model = st.sidebar.selectbox("Select Model:",
     ["google/gemini-2.0-flash-exp:free", 
      "deepseek/deepseek-chat-v3", 
      "add your model"]
@@ -30,6 +27,9 @@ model = st.sidebar.selectbox(
 
 # Load data using the uploaded file or default
 df = load_and_format_data(uploaded_file)
+
+# System context
+system_context = "You are an AI assistant for MS Project. Your role is to help users with project scheduling questions."
 
 if "messages" not in st.session_state:
     st.session_state["messages"] = [{"role": "assistant", "content": "How can I help you?"}]

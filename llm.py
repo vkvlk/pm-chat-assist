@@ -62,6 +62,3 @@ def llm_query(question_text: str, data: Optional[str]=" ") -> LLMResponse:
             relevant_tasks=[],
             date_range=None
         )
-
-res = llm_query("How many tasks are impacted by July 4th?")
-print(res.model_dump_json())
