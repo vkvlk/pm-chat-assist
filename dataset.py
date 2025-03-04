@@ -79,10 +79,16 @@ class DateUtils:
         return "\n\n".join(holiday_list)
     
 
-def load_and_format_data() -> str:
+def load_and_format_data(file=None) -> str:
     dt = DateUtils()
     # Load project schedule data
-    df = pd.read_excel(settings.data_file_path)
+    if file is not None:
+            # Read from uploaded file
+            df = pd.read_excel(file)
+    else:
+            # Fallback to default file
+            df = pd.read_excel(settings.data_file_path)
+    
 
     # Add metadata header
     data_context = f"""

@@ -1,7 +1,7 @@
 import streamlit as st
 from config import settings
 from dataset import load_and_format_data
-from llm import classify_question
+from llm import llm_query
 
 
 
@@ -9,8 +9,8 @@ from llm import classify_question
 
 
 # Streamlit UI
-st.title('MS Project assistant')
-st.write('This is a playground to test out the MS Project AI assistant')
+st.title('💬 MS Project assistant')
+st.write('🚀 This is a playground to test out the MS Project AI assistant')
 
 # Sidebar fields
 uploaded_file = st.sidebar.file_uploader("Choose data file",
@@ -29,8 +29,26 @@ model = st.sidebar.selectbox(
      "add your model"]
 
 )
+if "messages" not in st.session_state:
+    st.session_state["messages"] = [{"role": "assistant", "content": "How can I help you?"}]
 
+# Load data using the uploaded file or default
+df = load_and_format_data(uploaded_file)
 
+# Display chat history
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
 
-
-
+if df is not None:
+    # Chat input
+    if prompt := st.chat_input("Ask a question about the project schedule:"):
+        # Add user message to chat history
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        
+        # Display user message
+        with st.chat_message("user"):
+            st.markdown(prompt)
+            
+        # Process the question
+        question = prompt.lower()

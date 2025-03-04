@@ -11,24 +11,8 @@ from enum import Enum
 
 
 
-
 client = OpenAI(base_url=settings.base_url,
                 api_key=settings.openrouter_api_key)
-
-# client = instructor.patch(client, mode='functions') #instructor model response functional added to client
-
-
-class QueryType(str, Enum):
-    HOLIDAY_IMPACT = "holiday_impact"
-    WEEKEND_IMPACT = "weekend_impact"
-    GENERAL_QUERY = "general_query"
-
-class QueryClassification(BaseModel):
-    query_type: QueryType
-    confidence: float = Field(ge=0, le=1, description="Confidence score for the classification")
-    key_information: List[str] = Field(description="List of key points extracted from the question")
-    suggested_action: str = Field(description="Brief recommendation based on the query classification")
-
 
 
 class LLMResponse(BaseModel):
@@ -39,7 +23,7 @@ class LLMResponse(BaseModel):
     relevant_tasks: Optional[List[str]] = Field(default_factory=list)
     date_range: Optional[Dict[str, str]] = None  # Changed datetime to str for compatibility
 
-def llm_query(question_text: str) -> LLMResponse:
+def llm_query(question_text: str, data: Optional[str]=" ") -> LLMResponse:
     try:    
         patched_client = instructor.patch(client, mode=instructor.Mode.MD_JSON)
         # Get structured response using Instructor
@@ -50,7 +34,7 @@ def llm_query(question_text: str) -> LLMResponse:
             max_retries=3,
             response_model=LLMResponse,
             messages=[
-                {"role": "system", "content": settings.SYSTEM_PROMPT + data},
+                {"role": "system", "content": settings.SYSTEM_PROMPT + (data+"")},
                 {"role": "user", "content": question_text}
             ]
         )
@@ -68,11 +52,3 @@ def llm_query(question_text: str) -> LLMResponse:
     except Exception as e:
         return f"An error occurred: {e}"
 
-
-# some sample questions to classify
-questions = settings.typical_questions
-data = load_and_format_data()
-
-print(llm_query(questions[0]))
-print(llm_query(questions[1]))
-print(llm_query(questions[2]))
