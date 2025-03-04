@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 from openai import OpenAI
 from config import settings
 from typing import List, Literal, Optional, Dict
-from dataset import load_and_format_data
+from dataset import load_data
 
 # Define the LLM response model
 class LLMResponse(BaseModel):
