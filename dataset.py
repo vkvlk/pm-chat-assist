@@ -3,7 +3,7 @@
 import pandas as pd
 import holidays
 from datetime import datetime, timedelta
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 from config import settings
 
 class DateUtils:
@@ -79,28 +79,29 @@ class DateUtils:
         return "\n\n".join(holiday_list)
     
 
-def load_and_format_data(file=None) -> str:
-    dt = DateUtils()
-    # Load project schedule data
+def load_data(file=None) -> str:
     if file is not None:
             # Read from uploaded file
             df = pd.read_excel(file)
     else:
             # Fallback to default file
             df = pd.read_excel(settings.data_file_path)
-    
+    return df
 
+def llm_data_header(df:Optional[pd.DataFrame]=None) -> str:
     # Add metadata header
+    us_holidays = holidays.country_holidays(country=settings.country_code, years=settings.default_years)
+    us_holidays_str = "\n".join([f"{date}: {name}" for date, name in us_holidays.items()])
     data_context = f"""
     ## Project Schedule Data Context
     - Date Format: YYYY-MM-DD
     - Current Date: {datetime.today().strftime('%Y-%m-%d')}
-    - Federal Holidays: {dt.get_holidays_list_by_range(settings.default_years[0], settings.default_years[-1])}
+    - Federal Holidays: {us_holidays_str}
     - Weekend Definition: Saturday/Sunday
     - Task Relationships: FS=Finish-to-Start, SS=Start-to-Start, 4FS+43= Task 4 Finish-to-Start with offset +43 days
     """
 
     # Convert to LLM-friendly format
-    formatted_data = data_context + "\n\n## Task List\n" + df.to_markdown()
+    formatted_data = data_context + "\n\n## Task List\n" + df.head(10).to_markdown(index=False)
     return formatted_data
 
