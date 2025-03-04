@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from config import settings
-from dataset import load_and_format_data
+from dataset import load_data, llm_data_header
 from llm import llm_query
 
 
@@ -26,13 +26,16 @@ model = st.sidebar.selectbox("Select Model:",
 )
 
 # Load data using the uploaded file or default
-df = load_and_format_data(uploaded_file)
+df = load_data(uploaded_file)
 
 # System context
 system_context = "You are an AI assistant for MS Project. Your role is to help users with project scheduling questions."
 
 if "messages" not in st.session_state:
     st.session_state["messages"] = [{"role": "assistant", "content": "How can I help you?"}]
+    st.session_state["system_context"] = system_context #hidden trow of context for the model
+
+
 
     # Display chat history
 for msg in st.session_state.messages:
@@ -58,7 +61,7 @@ if df is not None:
             with st.chat_message("assistant"):
                 try:
                     # Get AI response 
-                    response = llm_query(question, df)
+                    response = llm_query(question)
                     
                     # Display the model response
                     st.json(response.model_dump_json())
