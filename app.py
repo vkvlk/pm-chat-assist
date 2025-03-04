@@ -36,19 +36,36 @@ if "messages" not in st.session_state:
 df = load_and_format_data(uploaded_file)
 
 # Display chat history
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
+for msg in st.session_state.messages:
+    with st.chat_message(msg["role"]):
+        st.markdown(msg["content"])
 
 if df is not None:
     # Chat input
     if prompt := st.chat_input("Ask a question about the project schedule:"):
         # Add user message to chat history
         st.session_state.messages.append({"role": "user", "content": prompt})
-        
+        st.chat_message("user").write(prompt)
+
+
+        # Add previous conversation for context (limit to last 10 exchanges)
+        memory_messages = []
+        for msg in st.session_state.messages[-10:]:
+            memory_messages.append({"role": msg["role"], "content": msg["content"]})
+
+        response = llm_query(memory_messages, df)
+        msg = response
+        st.session_state.messages.append({"role": "assistant", "content": msg})
+        st.chat_message("assistant").write(msg)
+
+
+
+"""
+
         # Display user message
         with st.chat_message("user"):
             st.markdown(prompt)
             
         # Process the question
         question = prompt.lower()
+"""
