@@ -10,9 +10,7 @@ from dataset import load_and_format_data
 from enum import Enum
 
 
-# some sample questions to classify
-questions = settings.typical_questions
-data = load_and_format_data()
+
 
 client = OpenAI(base_url=settings.base_url,
                 api_key=settings.openrouter_api_key)
@@ -41,7 +39,7 @@ class LLMResponse(BaseModel):
     relevant_tasks: Optional[List[str]] = Field(default_factory=list)
     date_range: Optional[Dict[str, str]] = None  # Changed datetime to str for compatibility
 
-def classify_question(question_text: str) -> LLMResponse:
+def llm_query(question_text: str) -> LLMResponse:
     try:    
         patched_client = instructor.patch(client, mode=instructor.Mode.MD_JSON)
         # Get structured response using Instructor
@@ -70,40 +68,11 @@ def classify_question(question_text: str) -> LLMResponse:
     except Exception as e:
         return f"An error occurred: {e}"
 
-print(classify_question(questions[0]))
-print(classify_question(questions[1]))
-print(classify_question(questions[2]))
 
-"""
+# some sample questions to classify
+questions = settings.typical_questions
+data = load_and_format_data()
 
-def classify_question(question_text: str) -> str:
-    try:
-        response = client.chat.completions.create(
-            model=settings.default_model,
-            temperature=settings.temperature,
-            # max_tokens=settings.max_tokens,
-            max_retries=3,
-            response_model=LLMResponse,
-            messages=[
-                {"role": "system", "content": load_and_format_data()},
-                {"role": "system", "content": settings.SYSTEM_PROMPT},
-                {"role": "user", "content": question_text}
-            ]
-        )
-        if response and response.choices:
-            return response.choices[0].message.content
-        else:
-            return "No valid response received from the API."
-    except Exception as e:
-        return f"An error occurred: {e}"
-
-print(classify_question(questions[0]))
-"""
-"""
-result0 = classify_question(questions[0])
-result1 = classify_question(questions[1])
-result2 = classify_question(questions[2])
-print(result0.model_dump_json(indent=2))
-print(result1.model_dump_json(indent=2))
-print(result2.model_dump_json(indent=2))
-"""
+print(llm_query(questions[0]))
+print(llm_query(questions[1]))
+print(llm_query(questions[2]))
