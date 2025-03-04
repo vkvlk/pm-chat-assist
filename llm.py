@@ -28,19 +28,19 @@ def llm_query(question_text: str, data: Optional[str]=" ") -> LLMResponse:
         patched_client = instructor.from_openai(client, mode=instructor.Mode.JSON)
         
         # Ensure data is properly formatted
-        #system_content = settings.SYSTEM_PROMPT
-        system_content = "You are project manager assistent, helping with project schedule and maintain tasks"
+        system_content = settings.TEST_PROMPT
+        #system_content = "You are project manager assistent, helping with project schedule and maintain tasks"
         #if data and isinstance(data, str):
          #   system_content += str(data)
         
         response = patched_client.chat.completions.create(
             model=settings.default_model,
             temperature=settings.temperature,
-            max_tokens=settings.max_tokens/2,
+            max_tokens=settings.max_tokens,
             max_retries=2,
             response_model=LLMResponse,
             messages=[
-                {"role": "system", "content": system_content},
+                {"role": "system", "content": system_content + data},
                 {"role": "user", "content": question_text}
             ]
         )
