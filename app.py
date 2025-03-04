@@ -1,7 +1,9 @@
 import streamlit as st
+import pandas as pd
 from config import settings
 from dataset import load_and_format_data
-from llm import llm_query
+
+from llm import llm_query, LLMResponse
 
 
 # Streamlit UI
@@ -40,8 +42,6 @@ for msg in st.session_state.messages:
 
 
 
-
-
 if df is not None:
         # Chat input
         if prompt := st.chat_input("Ask a question about the project schedule:"):
@@ -56,14 +56,23 @@ if df is not None:
             question = prompt.lower()
             
             with st.chat_message("assistant"):
-                
-                        # Get AI response using the selected model
-                        response = llm_query(question, df)
-                        st.markdown(response)
-                        # Add assistant response to chat history
-                        st.session_state.messages.append({"role": "assistant", "content": response})
+                try:
+                    # Get AI response 
+                    response = llm_query(question, df)
+                    
+                    # Display the model response
+                    st.json(response.model_dump_json())
+                    
+                    # Add assistant response to chat history
+                    st.session_state.messages.append({"role": "assistant", "content": response.content})
+                    
+                    # If confidence is low, show a warning
+                    if response.confidence < 0.5:
+                        st.warning("Low confidence response - please verify the information")
+                        
+                except Exception as e:
+                    st.error(f"An error occurred while processing the response: {str(e)}")
                
 else:
         st.error("Please ensure 'data.xlsx' is available in the project directory.")
-
 

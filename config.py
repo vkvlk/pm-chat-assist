@@ -11,7 +11,7 @@ class Settings(BaseSettings):
 
     data_file_path: str = "data.xlsx"
     country_code: str = "US"
-    default_years: List[int] = [2019, 2020, 2021, 2022, 2023, 2024, 2025]
+    default_years: List[int] = [2019, 2020, 2021, 2022]
     typical_questions: List[str] = ["Which tasks start on holiday?",
                                     "Which tasks are impacted by July 4th?",
                                     "How many days we prolong project delivery if no task can be completed during the weekend?"]
@@ -24,10 +24,8 @@ class Settings(BaseSettings):
 
     Business Context:
 
-    - We manage multiple complex projects with hundreds of interdependent tasks.
-    - Accurate schedule analysis is crucial for meeting deadlines and resource allocation.
     - Holiday/weekend recognition and dependency management are critical success factors.
-    - Priorities include timeline optimization, risk identification, and schedule validation.
+
 
     Your tasks:
 
@@ -38,6 +36,7 @@ class Settings(BaseSettings):
     5. Suggest potential timeline optimizations.
     6. Categorize the quethion into the most appropriate category.
     7. Provide confidence score for your analysis.
+    8. Extract relevant tasks and date ranges for further review.
 
     Remember:
 
@@ -59,7 +58,7 @@ class Settings(BaseSettings):
     - Confidence: [0.0-1.0]
     - Suggested Action: [Weekend work recommendations]
 
-    Critical Path Analysis:
+    Path Analysis:
     - Key Dependencies: [Major dependency chains]
     - Risk Areas: [Vulnerable task sequences]
 

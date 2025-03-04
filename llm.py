@@ -5,50 +5,63 @@ from pydantic import BaseModel, Field
 from openai import OpenAI
 from config import settings
 from typing import List, Literal, Optional, Dict
-from models import TaskAnalysisRequest
 from dataset import load_and_format_data
-from enum import Enum
 
-
-
-client = OpenAI(base_url=settings.base_url,
-                api_key=settings.openrouter_api_key)
-
-
+# Define the LLM response model
 class LLMResponse(BaseModel):
     """Model for structured LLM responses"""
-    response_type: Literal["task_analysis", "schedule_impact", "general_query"]
+    response_type: Literal["task_analysis", "holiday_impact", "weekend_impact", "schedule_impact", "path_analysis", "general_query"]
     content: str
     confidence: float = Field(ge=0.0, le=1.0)
     relevant_tasks: Optional[List[str]] = Field(default_factory=list)
-    date_range: Optional[Dict[str, str]] = None  # Changed datetime to str for compatibility
+    date_range: Optional[Dict[str, str]] = None  # Changed datetime to str for compatibility    
 
+# Define the LLM query function
 def llm_query(question_text: str, data: Optional[str]=" ") -> LLMResponse:
     try:    
-        patched_client = instructor.patch(client, mode=instructor.Mode.MD_JSON)
-        # Get structured response using Instructor
+        # Create a new client with the current API key
+        client = OpenAI(
+            base_url=settings.base_url,
+            api_key=settings.openrouter_api_key,
+        )
+    
+        patched_client = instructor.from_openai(client, mode=instructor.Mode.JSON)
+        
+        # Ensure data is properly formatted
+        #system_content = settings.SYSTEM_PROMPT
+        system_content = "You are project manager assistent, helping with project schedule and maintain tasks"
+        #if data and isinstance(data, str):
+         #   system_content += str(data)
+        
         response = patched_client.chat.completions.create(
             model=settings.default_model,
             temperature=settings.temperature,
-            # max_tokens=settings.max_tokens,
-            max_retries=3,
+            max_tokens=settings.max_tokens/2,
+            max_retries=2,
             response_model=LLMResponse,
             messages=[
-                {"role": "system", "content": settings.SYSTEM_PROMPT + (data+"")},
+                {"role": "system", "content": system_content},
                 {"role": "user", "content": question_text}
             ]
         )
         
-        # With instructor, response is already the LLMResponse object
-        # Format the response for display
-        formatted_response = response.content
-        if response.relevant_tasks:
-            formatted_response += "\n\nRelevant Tasks:\n" + "\n".join(response.relevant_tasks)
-        if response.date_range:
-            formatted_response += f"\n\nDate Range: {response.date_range['start']} to {response.date_range['end']}"
-        
-        return formatted_response
+        # response is already a LLMResponse object ready to .model_dump_json()
+        return response
         
     except Exception as e:
-        return f"An error occurred: {e}"
+        error_msg = str(e)
+        # Add more detailed error information
+        if "'NoneType' object is not subscriptable" in error_msg:
+            error_msg += " - This typically happens when the API response is incomplete (Openrouter error)"
+            
+        # Always return a LLMResponse object, even for errors
+        return LLMResponse(
+            response_type="error_msg",
+            content=f"Error processing request: {error_msg}",
+            confidence=0.0,
+            relevant_tasks=[],
+            date_range=None
+        )
 
+res = llm_query("How many tasks are impacted by July 4th?")
+print(res.model_dump_json())
