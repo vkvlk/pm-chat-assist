@@ -14,7 +14,7 @@ This project is a Streamlit-based AI assistant designed to help users with proje
 1. Clone the repository:
 
    ```sh
-   git clone https://github.com/yourusername/pm-chat-assist.git
+   git clone https://github.com/vkvlk/pm-chat-assist.git
    cd pm-chat-assist
    ```
 
